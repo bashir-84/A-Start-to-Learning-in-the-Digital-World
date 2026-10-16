@@ -92,3 +92,58 @@
   window.addEventListener('load', schedule, { once: true });
   update();
 })();
+
+// Exclusive FAQ: native details remains usable with JavaScript disabled.
+(() => {
+ const items = [...document.querySelectorAll('.faq-list details')];
+ const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+ items.forEach(item => {
+   item.addEventListener('toggle', () => {
+     if (!item.open) return;
+     items.forEach(other => { if (other !== item) other.open = false; });
+     const answer = item.querySelector('.faq-answer');
+     if (!reduced.matches && answer.animate) answer.animate([{opacity:0,transform:'translateY(-5px)'},{opacity:1,transform:'translateY(0)'}],{duration:240,easing:'ease-out'});
+   });
+ });
+})();
+// One absolute deadline for all visitors. Refreshing never restarts the offer.
+(() => {
+ const offer = document.querySelector('.workshop-offer');
+ if (!offer) return;
+ const deadline = Date.parse(offer.dataset.deadline);
+ const format = value => String(value).padStart(2, '0').replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+ let interval;
+ function updateOffer() {
+   const remaining = Math.max(0, Math.floor((deadline - Date.now()) / 1000));
+   const expired = remaining === 0;
+   offer.classList.toggle('is-expired', expired);
+   offer.querySelector('.offer-current').hidden = !expired;
+   offer.querySelector('.offer-ended').hidden = !expired;
+   offer.querySelector('.offer-countdown').hidden = expired;
+   offer.querySelector('.offer-status').textContent = expired ? 'پیشنهاد پایان‌یافته' : 'پیشنهاد محدود ثبت‌نام';
+   const values = {days:Math.floor(remaining/86400),hours:Math.floor(remaining/3600)%24,minutes:Math.floor(remaining/60)%60,seconds:remaining%60};
+   Object.entries(values).forEach(([unit,value]) => { offer.querySelector(`[data-unit="${unit}"]`).textContent = format(value); });
+   if (expired && interval) clearInterval(interval);
+ }
+ updateOffer();
+ if (Date.now() < deadline) interval = setInterval(updateOffer,1000);
+ document.addEventListener('visibilitychange',updateOffer);
+ window.addEventListener('pageshow',updateOffer);
+})();
+// Try Telegram on mobile; preserve the web link as a fallback.
+(() => {
+ if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+ document.querySelectorAll('a[data-telegram]').forEach(link => {
+   link.addEventListener('click', event => {
+     if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+     event.preventDefault();
+     let fallback;
+     const stop = () => { clearTimeout(fallback); document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('pagehide',stop); };
+     const onVisibility = () => { if (document.hidden) stop(); };
+     document.addEventListener('visibilitychange',onVisibility);
+     window.addEventListener('pagehide',stop,{once:true});
+     fallback = setTimeout(() => { stop(); if (!document.hidden) window.location.assign(link.href); },1800);
+     window.location.assign('tg://resolve?domain=' + encodeURIComponent(link.dataset.telegram));
+   });
+ });
+})();
