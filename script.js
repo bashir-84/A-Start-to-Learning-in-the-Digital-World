@@ -121,6 +121,7 @@
    offer.querySelector('.offer-ended').hidden = !expired;
    offer.querySelector('.offer-countdown').hidden = expired;
    offer.querySelector('.offer-status').textContent = expired ? 'پیشنهاد پایان‌یافته' : 'پیشنهاد محدود ثبت‌نام';
+   document.querySelectorAll('[data-offer-link]').forEach(link => { link.textContent = expired ? 'مشاهدهٔ هزینهٔ کارگاه ↓' : 'مشاهدهٔ تخفیف ویژه ↓'; });
    const values = {days:Math.floor(remaining/86400),hours:Math.floor(remaining/3600)%24,minutes:Math.floor(remaining/60)%60,seconds:remaining%60};
    Object.entries(values).forEach(([unit,value]) => { offer.querySelector(`[data-unit="${unit}"]`).textContent = format(value); });
    if (expired && interval) clearInterval(interval);
